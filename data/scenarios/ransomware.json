@@ -1,0 +1,23 @@
+{
+  "id": "ransomware",
+  "name": "Suspected ransomware on server-a",
+  "assets": [
+    {"host": "server-a", "criticality": "medium"},
+    {"host": "server-b", "criticality": "medium"},
+    {"host": "payments", "criticality": "critical"}
+  ],
+  "events": [
+    {"id": "e1", "ts": "2026-10-18T09:00:00Z", "host": "server-a", "type": "process_start", "details": {"parent": "WINWORD.EXE", "image": "powershell.exe"}},
+    {"id": "e2", "ts": "2026-10-18T09:02:10Z", "host": "server-a", "type": "outbound_conn", "details": {"dest": "203.0.113.50", "beacon": true}},
+    {"id": "e3", "ts": "2026-10-18T09:05:00Z", "host": "server-a", "type": "backup_delete", "details": {}},
+    {"id": "e4", "ts": "2026-10-18T09:06:30Z", "host": "server-a", "type": "file_rename_burst", "details": {"count": 840, "new_ext": "locked"}},
+    {"id": "e5", "ts": "2026-10-18T09:07:00Z", "host": "server-b", "type": "smb_auth", "details": {"src": "server-a", "failures": 14}},
+    {"id": "e6", "ts": "2026-10-18T09:08:00Z", "host": "payments", "type": "login", "details": {"user": "svc-backup", "ok": true}},
+    {"id": "e7", "ts": "2026-10-18T09:09:00Z", "host": "payments", "type": "outbound_conn", "details": {"dest": "198.51.100.7", "beacon": false}}
+  ],
+  "post_action_events": [
+    {"id": "p1", "ts": "2026-10-18T09:12:00Z", "host": "server-a", "type": "host_isolated", "details": {}},
+    {"id": "p2", "ts": "2026-10-18T09:13:00Z", "host": "server-a", "type": "outbound_conn", "details": {"dest": "203.0.113.50", "blocked": true}}
+  ],
+  "expected_outcome": {"no_new_beacon_from": "server-a", "payments_untouched": true}
+}

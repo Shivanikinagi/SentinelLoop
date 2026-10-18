@@ -1,0 +1,15 @@
+{
+  "id": "benign",
+  "name": "Nightly backup noise (false positive check)",
+  "assets": [
+    {"host": "server-a", "criticality": "medium"},
+    {"host": "payments", "criticality": "critical"}
+  ],
+  "events": [
+    {"id": "b1", "ts": "2026-10-18T02:00:00Z", "host": "server-a", "type": "process_start", "details": {"parent": "services.exe", "image": "backup.exe"}},
+    {"id": "b2", "ts": "2026-10-18T02:10:00Z", "host": "server-a", "type": "file_rename_burst", "details": {"count": 12, "new_ext": "bak"}},
+    {"id": "b3", "ts": "2026-10-18T02:20:00Z", "host": "payments", "type": "login", "details": {"user": "svc-backup", "ok": true}}
+  ],
+  "post_action_events": [],
+  "expected_outcome": {}
+}

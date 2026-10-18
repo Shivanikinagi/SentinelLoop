@@ -1,0 +1,211 @@
+# SentinelLoop: Implementation Plan
+
+Our goal is to build a working cybersecurity decision-support system that uses Jev to help a security analyst choose the next response during a simulated cyberattack.
+
+We are not trying to build a complete antivirus, SIEM or autonomous security agent in 24 hours. We are building one complete workflow that demonstrates how an alert becomes a decision, how that decision is approved, and how we check whether the response worked.
+
+## 1. What are we actually building?
+
+Imagine a company has three servers. All three show suspicious activity, but one runs the payment system. We have evidence of possible ransomware, but we do not know whether the attack has spread.
+
+The security analyst has three possible responses: isolate a server, investigate further, or escalate to the incident commander.
+
+SentinelLoop will bring the evidence together, ask Jev to evaluate the available options, and present a recommendation for the analyst to review.
+
+1\. Detect the suspicious activity
+
+Load a prepared set of synthetic security logs. Identify suspicious events using predefined detection rules.
+
+2\. Build the incident context
+
+Group related events into a timeline, identify affected servers, and include business criticality and known uncertainties.
+
+3\. Ask Jev to evaluate the decision
+
+Use Jev's `Choice`, `Score` and `Noul` outputs to select a response option, prioritize urgency, and evaluate an evidence-based proposition.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://jevmodel.org\&sz=32)
+
+jevmodel.org
+
++1
+
+
+
+4\. Check safety and obtain approval
+
+A deterministic policy layer checks the proposed action, its permissions and potential impact. The analyst approves or rejects it.
+
+5\. Simulate the response and verify it
+
+Execute a safe, simulated containment action in the lab, replay or inspect the resulting events, and display whether the test's expected outcome was achieved.
+
+This complete workflow is the product we want judges to experience. The core differentiator is not simply the recommendation; it is the combination of structured decisions, evidence, human approval and verification.
+
+## 2. How exactly will we use Jev?
+
+Jev is the decision layer, not the tool that detects attacks or executes the response. Its documented API accepts a state and typed questions, then returns structured answers that application code can use.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://jevmodel.org\&sz=32)
+
+jevmodel.org
+
+
+
+We will make one Jev request with three questions, evaluating the same incident context.
+
+| Jev output | Question for SentinelLoop                                                              | What our application does                                                          |
+| ---------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `Choice`   | Which approved response option best fits the available evidence?                       | Displays the selected option and alternatives.                                     |
+| `Score`    | How urgent is the incident according to our defined rubric?                            | Helps prioritize incidents for review.                                             |
+| `Noul`     | Does the available evidence support the hypothesis that lateral movement is occurring? | Displays the probability as an uncertain signal alongside the supporting evidence. |
+
+The Noul output does not prove the hypothesis is true. Likewise, a Jev recommendation cannot override our safety rules.
+
+### Example request to Jev
+
+Our backend will send a payload conceptually like this to the Jev API:
+
+```
+{
+  "model": "jev-latest",
+  "state": {
+    "incident": "INC-001",
+    "type": "suspected_ransomware",
+    "assets": [
+      {
+        "host": "server-a",
+        "criticality": "medium",
+        "evidence": ["encryption-like file activity"]
+      },
+      {
+        "host": "payments",
+        "criticality": "critical",
+        "evidence": ["no confirmed malicious beacon"]
+      }
+    ],
+    "lateral_movement": "uncertain"
+  },
+  "questions": {
+    "response": {
+      "type": "choice",
+      "instructions": "Select the most appropriate next step given the evidence, uncertainty and operational impact.",
+      "criteria": {
+        "isolate_host": "Recommend isolating the suspected affected host.",
+        "collect_evidence": "Gather more evidence before containment.",
+        "escalate": "Escalate the case for an incident commander's decision."
+      }
+    },
+    "urgency": {
+      "type": "score",
+      "instructions": "Rate the incident urgency based on observed activity, scope and business impact.",
+      "criteria": [
+        "Low",
+        "Moderate",
+        "High",
+        "Critical"
+      ]
+    },
+    "lateral_movement": {
+      "type": "noul",
+      "instructions": "Does the provided evidence support the hypothesis that lateral movement is occurring?"
+    }
+  }
+}
+```
+
+The payload is illustrative, not a live API result. We will validate the question definitions in the Jev playground, then connect the backend to `POST https://jevmodel.org/v1/systemone` using a server-side API key. The documented endpoint supports these question types, with up to eight questions per request.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://jevmodel.org\&sz=32)
+
+jevmodel.org
+
+
+
+The actual response will feed our decision card. We will not hardcode a result or claim Jev chose correctly until we run the scenario.
+
+## 3. What we need to implement
+
+I recommend five small modules, each with a clear responsibility.
+
+### Module 1 — Log ingestion and detection
+
+Python · FastAPI
+
+Accept synthetic JSON or CSV logs, normalize timestamps and asset identifiers, and run predefined detection rules. We will use a small, reproducible dataset rather than building a full security monitoring engine.
+
+### Module 2 — Incident context builder
+
+Python · Pydantic · SQLite
+
+Group related events, build the attack timeline, record asset criticality and attach evidence references. SQLite is sufficient for a hackathon prototype; we don't need a graph database yet.
+
+### Module 3 — Jev decision service
+
+Python · HTTP client · Jev API
+
+Send the incident state and three typed questions to Jev. Validate the response, handle timeouts and malformed results, and return a normalized decision object to the frontend.
+
+### Module 4 — Policy and approval engine
+
+Deterministic Python rules
+
+Validate proposed actions against an allowlist, enforce approval for disruptive actions, and fail safely if Jev is unavailable. This module—not the AI—controls whether an action may run.
+
+### Module 5 — Analyst dashboard
+
+React · TypeScript · Tailwind CSS
+
+Display the attack timeline, affected assets, evidence, Jev's recommendation, alternatives, urgency, uncertainty, approval controls and post-action verification.
+
+## 4. Suggested architecture
+
+React dashboard
+
+Incident timeline · Decision card · Approval controls
+
+FastAPI backend
+
+Incident API · Log parser · Context builder
+
+Detection engine
+
+Rules + event correlation
+
+Jev decision API
+
+Choice + Score + Noul
+
+Policy enforcement
+
+Permissions · approval · safe fallback · audit log
+
+Isolated simulation
+
+Mock containment · replayed events · verification
+
+The frontend never receives the Jev API key. All API calls, authorization checks and simulated actions run on the backend.
+
+## 5. What should the judges see?
+
+The demonstration should take approximately five minutes.
+
+1. Load incident: Start the prepared ransomware scenario and show suspicious events appearing in the timeline.
+2. Build context: Show the three servers, the critical payment service and what remains uncertain.
+3. Make a decision: Run Jev and display the response choice, urgency score and lateral-movement signal.
+4. Test the safety gate: Attempt an action that violates the lab's policy and show that the backend blocks it. Then request approval for a permitted simulated action.
+5. Verify: Run the simulated containment and inspect the subsequent event stream. Show whether the expected test outcome passed, including a failure case where it does not.
+
+A particularly strong demonstration is to change one input—such as the criticality of the payment server—and show how the decision and approval requirements respond. That makes the system's behavior visible rather than relying on a prepared verbal explanation.
+
+For two developers, one can own the backend, Jev integration and evaluation while the other builds the dashboard and demo flow. Agree on the incident JSON schema and API contract first so the two parts can be developed in parallel.
+
+## 7. What we are deliberately not building
+
+For this hackathon, we should leave out production EDR integrations, actual production isolation, automated credential revocation, a complex multi-agent framework, full threat-intelligence ingestion and claims of production-grade accuracy.
+
+We should instead test the prototype against several labelled scenarios, including false positives, ambiguous evidence, critical assets, missing logs and Jev API failures. Measure decision latency, agreement with expected outcomes, evidence correctness, false escalations and unsafe-action blocks.
+
+The definition of done: A judge can load an incident, inspect the evidence, see a real Jev API decision, approve a safe simulated response, and verify the resulting test outcome—all through one interface.
+
+That is a complete, demonstrable product slice. It gives SentinelLoop a credible technical foundation without pretending a 24-hour prototype is ready to control real enterprise infrastructure.

@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* Palette is locked to red, white and black. Shades come only from opacity or
+   gradients between these three; never add another hue. */
+@theme {
+  --color-ink: #000000;
+  --color-paper: #ffffff;
+  --color-blood: #e10600;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", monospace;
+}
+
+html, body, #root { min-height: 100vh; }
+body {
+  margin: 0;
+  background: radial-gradient(1200px 600px at 85% -10%, rgb(225 6 0 / 0.28), transparent 60%), #000;
+  color: #fff;
+  font-family: var(--font-sans);
+}
+::selection { background: var(--color-blood); color: #fff; }
