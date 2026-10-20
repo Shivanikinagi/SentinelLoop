@@ -26,6 +26,14 @@ class Alert(BaseModel):
     summary: str
 
 
+class Group(BaseModel):
+    host: str
+    start: str
+    end: str
+    rules: list[str]
+    event_ids: list[str]
+
+
 class Scenario(BaseModel):
     id: str
     name: str
@@ -41,4 +49,5 @@ class Incident(BaseModel):
     assets: list[Asset]
     timeline: list[Event]
     alerts: list[Alert]
+    groups: list[Group] = []
     uncertainties: list[str] = []
