@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from context import group_alerts, uncertainties
 from detect import SCENARIOS, detect, load_scenario
-from models import Asset, Incident
+from jev import decide as jev_decide
+from models import Asset, Decision, Incident
 
 app = FastAPI(title="SentinelLoop")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_methods=["*"], allow_headers=["*"])
@@ -64,3 +65,8 @@ def set_criticality(iid: str, host: str, asset: Asset):
             save(inc)
             return inc
     raise HTTPException(404, "unknown host")
+
+
+@app.post("/incidents/{iid}/decide", response_model=Decision)
+def decide(iid: str):
+    return jev_decide(get(iid))
