@@ -51,3 +51,14 @@ class Incident(BaseModel):
     alerts: list[Alert]
     groups: list[Group] = []
     uncertainties: list[str] = []
+
+
+class Decision(BaseModel):
+    status: Literal["ok", "unavailable"]
+    choice: str | None = None
+    alternatives: dict[str, float] = {}  # option -> probability
+    confidence: float | None = None
+    urgency: float | None = None  # 0-3 on Low..Critical, may be fractional
+    urgency_label: str | None = None
+    lateral_movement: float | None = None  # Noul P(yes): an uncertain signal, not proof
+    reason: str | None = None
